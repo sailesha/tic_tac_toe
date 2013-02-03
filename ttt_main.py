@@ -1,5 +1,7 @@
 import cgi
+import jinja2
 import logging
+import os
 import webapp2
 from webapp2_extras import sessions
 from ttt_game_grid import GameGrid
@@ -37,68 +39,95 @@ class MainPage(webapp2.RequestHandler):
     return game_id
 
   def getGameGrid(self, game_id):
+    if not game_id:
+      return None
     game_grid = GameGrid.FindGameGridForID(game_id.id)
     if game_grid:
       return game_grid 
-    if game_id.player_idex != 0:
+    if game_id.player_index != 0:
       return None
     game_grid = GameGrid(game_id.id)
     game_grid.save()
     return game_grid
 
-  def makePage(self, game_id, message=None):
-    game_grid = self.getGameGrid(game_id)
+  def getGameInfo(self, game_id):
+    return 'game_id: ' + game_id.id + '/' + str(game_id.player_index)
 
-    page = '<HTML><BODY>'
-    page = 'game_id: ' + game_id.id + '/' + str(game_id.player_index) + '<BR>'
+  def getGameStatus(self, game_id, game_grid):
+    status_list = []
     if game_id.player_index == 0:
-      page = page + 'You are: O'
+      status_list.append('You are: O')
     else:
-      page = page + 'You are: X'
+      status_list.append('You are: X')
     game_over = game_grid.isGameOver()
     if game_over[0]:
       if game_over[1] == game_id.player_index:
-        page = page + ', you won!'
+        status_list.append('you won!')
       else:
-        page = page + ', you lost'
+        status_list.append('you lost')
     elif game_id.player_index == game_grid.current_player_index:
-      page = page + ', your turn'
+      status_list.append('your turn')
     else:
-      page = page + ', not your turn'
-    page = page + '<BR>'
+      status_list.append('not your turn')
+    return ", ".join(status_list)
 
-    if game_grid:
-      page = page + game_grid.getGridAsHTML()
-      page = page + """<FORM method="post">
-                         <textarea name="text_command"></textarea>
-                         <input type="submit" value="Submit">
-                       </FORM>"""
-    else:
-      page = page + 'Error: No game found<BR>'
-    if message:
-      page = page + message + '<BR>'
-    page = page + '</BODY></HTML>'
-    return page
+  def makePage(self, game_id, message=None):
+    game_grid = self.getGameGrid(game_id)
+    if not game_grid:
+      return jinja_environment.get_template('no_game.html').render()
+
+    player_symbol = ''
+    if game_id.player_index == game_grid.current_player_index:
+      if game_id.player_index == 0:
+        player_symbol = 'O'
+      elif game_id.player_index == 1:
+        player_symbol = 'X'
+
+    template_values = {
+      'game_info': self.getGameInfo(game_id),
+      'game_status': self.getGameStatus(game_id, game_grid),
+      'grid_text': game_grid.getGridAsHTML(),
+      'grid_array': game_grid.grid,
+      'message': message,
+      'player_symbol': player_symbol,
+    }
+    template = jinja_environment.get_template('index.html')
+    return template.render(template_values)
 
   def get(self, *args, **kwargs):
     game_id = self.getCurrentGameID(args)
     self.response.write(self.makePage(game_id))
 
+  def parseSetCommand(self, words, row, col):
+    if row and row.isdigit() and col and col.isdigit():
+      return (int(row), int(col))
+    if words and len(words) == 3 and words[0] == 'SET':
+      if words[1].isdigit() and words[2].isdigit():
+        return (int(words[1]), int(words[2]))
+    return None
+
   def post(self, *args, **kwargs):
     game_id = self.getCurrentGameID(args)
     game_grid = self.getGameGrid(game_id)
-    words = self.request.get('text_command').upper().split()
+
+    text_command = self.request.get('text_command')
+    row = self.request.get('row')
+    col = self.request.get('col')
+    words = []
+    if text_command:
+      words = self.request.get('text_command').upper().split()
+
     message = ''
-    if game_grid and len(words) > 0:
-      if words[0] == 'SET' and len(words) == 3:
-        row = int(words[1])
-        col = int(words[2])
-        if game_grid.setGridValue(row, col, game_id.player_index):
+    if game_grid:
+      setCommand = self.parseSetCommand(words, row, col)
+      if setCommand:
+        if game_grid.setGridValue(setCommand[0], setCommand[1], \
+                                  game_id.player_index):
           game_grid.endCurrentTurn()
           game_grid.save()
         else:
           message = 'Error: invalid move'
-      elif words[0] == 'INVITE' and len(words) == 2:
+      elif  len(words) == 2 and words[0] == 'INVITE':
         if game_id.player_index == 0:
           if words[1] == 'FRIEND':
             url = self.request.host_url + '/' + game_id.id + '1'
@@ -106,6 +135,10 @@ class MainPage(webapp2.RequestHandler):
         else:
           message = 'Only the host player can invite.'
     self.response.write(self.makePage(game_id, message))
+
+
+jinja_environment = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
 
 config = {}
 config['webapp2_extras.sessions'] = {

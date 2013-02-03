@@ -1,10 +1,29 @@
 <html>
   <head>
     <style type='text/css'>
-      .grid {
-        width: 310px;
+      .container {
+        width: 810px;
         margin-left: auto;
         margin-right: auto;
+        margin-top: 50px;
+      }
+      .footer {
+        clear: both;
+      }
+      .column {
+        position: relative;
+        float: left;
+      }
+      .player_x {
+        width: 250px;
+        background-color: green;
+      }
+      .player_o {
+        width: 250px;
+        background-color: blue;
+      }
+      .grid {
+        width: 310px;
       }
       table {
         border-collapse: collapse;
@@ -62,6 +81,9 @@
       .strike_diagonal {
         background: transparent url('/images/strike_diagonal.png');
       }
+      .console {
+        display: none;
+      }
     </style>
     <script>
       function onClickCell(row, col) {
@@ -73,21 +95,30 @@
     </script>
   </head>
   <body>
-    <div>{{ game_info }}</div>
-    <div>{{ game_status }}</div>
-    <div>{{ grid_text }}</div>
-    <form method='post' id='form'>
-      <textarea name='text_command'></textarea>
-      <input type='submit' value='Submit'>
-      <input type="hidden" name="row" value="">
-      <input type="hidden" name="col" value="">
-    </form>
-    {% if message %}
-      <div>{{ message }}</div>
-    {% endif %}
+    <div class="console">
+      <div>{{ game_info }}</div>
+      <div>{{ game_status }}</div>
+      <div>{{ grid_text }}</div>
+      <form method='post' id='form'>
+        <textarea name='text_command'></textarea>
+        <input type='submit' value='Submit'>
+        <input type="hidden" name="row" value="">
+        <input type="hidden" name="col" value="">
+      </form>
+      {% if message %}
+        <div>{{ message }}</div>
+      {% endif %}
+    </div>
 
-    <div class='grid'>
-      {{ grid_html }}
+    <div class='container'>
+      <div class='player_x column'>player x</div>
+      <div class='grid column'>
+        {{ grid_html }}
+      </div>
+      <div class='player_o column'>
+        <form method='post' id='form'>
+      </div>
+      <div class='footer'></div>
     </div>
   </body>
 </html>

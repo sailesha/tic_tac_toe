@@ -70,6 +70,17 @@ class MainPage(webapp2.RequestHandler):
       status_list.append('not your turn')
     return ", ".join(status_list)
 
+  def getGameStatus2(self, game_id, game_grid):
+    if game_grid.isGameOver():
+      if game_grid.getWinningPlayerIndex() == game_id.player_index:
+        return 'You won!'
+      else:
+        return 'You lost!'
+    if game_id.player_index == 0:
+      url = self.request.host_url + '/' + game_id.id + '1'
+      return 'Invite second player: ' + url
+    return ''
+
   def makePage(self, game_id, message=None):
     game_grid = self.getGameGrid(game_id)
     if not game_grid:
@@ -78,10 +89,15 @@ class MainPage(webapp2.RequestHandler):
     template_values = {
       'game_info': self.getGameInfo(game_id),
       'game_status': self.getGameStatus(game_id, game_grid),
+      'game_status_2': self.getGameStatus2(game_id, game_grid),
       'grid_text': game_grid.getGridAsSimpleHTML(),
       'grid_html': game_grid.getGridAsHTML(game_id.player_index),
       'message': message,
     }
+
+    if game_grid.isGameOver() and game_id.player_index == 0:
+      template_values['show_new_game'] = True
+
     template = jinja_environment.get_template('index.html')
     return template.render(template_values)
 
@@ -104,6 +120,7 @@ class MainPage(webapp2.RequestHandler):
     text_command = self.request.get('text_command')
     row = self.request.get('row')
     col = self.request.get('col')
+    new_game = self.request.get('new_game')
     words = []
     if text_command:
       words = self.request.get('text_command').upper().split()
@@ -125,6 +142,9 @@ class MainPage(webapp2.RequestHandler):
             message = 'Ask friend to go to ' + url
         else:
           message = 'Only the host player can invite.'
+      elif new_game == '1':
+        game_grid.resetGrid()
+        game_grid.save()
     self.response.write(self.makePage(game_id, message))
 
 

@@ -18,10 +18,7 @@ class GameGridDB(db.Model):
 class GameGrid:
   def __init__(self, game_id):
     self.game_id = game_id
-    self.grid = [[0, 0, 0],
-                 [0, 0, 0],
-                 [0, 0, 0]]
-    self.current_player_index = 0
+    self.resetGrid()
 
   def getGridAsString(self):
     grid_string = ''
@@ -119,14 +116,14 @@ class GameGrid:
   def isGameOver(self):
     (cells, orientation) = self.getWinningCells()
     if not cells:
-      return (False, 0)
+      return False
     value = self.grid[cells[0][0]][cells[0][1]]
     if value == 1:
-      return (True, 0)
+      return True
     elif value == 2:
-      return (True, 1)
+      return True
     else:
-      return (False, 0)
+      return False
 
   def cellValuesMatch(self, cells):
     val1 = self.grid[cells[0][0]][cells[0][1]]
@@ -165,6 +162,12 @@ class GameGrid:
     else:
       self.grid[row][col] = 2
     return True
+
+  def resetGrid(self):
+    self.grid = [[0, 0, 0],
+                 [0, 0, 0],
+                 [0, 0, 0]]
+    self.current_player_index = 0
 
   def save(self):
     game_grid_db = GameGridDB.FindWithGameID(self.game_id)

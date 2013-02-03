@@ -36,7 +36,7 @@ class GameGrid:
       return 'O'
     if cell == 2:
       return 'X'
-    if self.current_player_index != player_index or self.isGameOver()[0]:
+    if self.current_player_index != player_index or self.isGameOver():
       return ''
     if self.current_player_index == 0:
       return 'O'
@@ -63,7 +63,7 @@ class GameGrid:
 
   def getCellHTMLOnClick(self, row, col):
     cell = self.grid[row][col]
-    if cell != 0 or self.isGameOver()[0]:
+    if cell != 0 or self.isGameOver():
       return ''
     return 'onClickCell(%d, %d)' % (row, col)
 
@@ -109,6 +109,13 @@ class GameGrid:
         letter = grid_string[row * 3 + col]
         self.grid[row][col] = int(letter)
 
+  def getWinningPlayerIndex(self):
+    (cells, orientation) = self.getWinningCells()
+    val1 = self.grid[cells[0][0]][cells[0][1]]
+    if val1 == 1:
+      return 0
+    return 1
+
   def isGameOver(self):
     (cells, orientation) = self.getWinningCells()
     if not cells:
@@ -145,7 +152,7 @@ class GameGrid:
     self.current_player_index = (self.current_player_index + 1) % 2
 
   def setGridValue(self, row, col, player_index):
-    if self.isGameOver()[0]:
+    if self.isGameOver():
       return False
     if self.current_player_index != player_index:
       return False

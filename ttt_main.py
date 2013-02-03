@@ -59,9 +59,8 @@ class MainPage(webapp2.RequestHandler):
       status_list.append('You are: O')
     else:
       status_list.append('You are: X')
-    game_over = game_grid.isGameOver()
-    if game_over[0]:
-      if game_over[1] == game_id.player_index:
+    if game_grid.isGameOver():
+      if game_grid.getWinningPlayerIndex() == game_id.player_index:
         status_list.append('you won!')
       else:
         status_list.append('you lost')

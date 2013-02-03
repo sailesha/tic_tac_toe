@@ -76,20 +76,12 @@ class MainPage(webapp2.RequestHandler):
     if not game_grid:
       return jinja_environment.get_template('no_game.html').render()
 
-    player_symbol = ''
-    if game_id.player_index == game_grid.current_player_index:
-      if game_id.player_index == 0:
-        player_symbol = 'O'
-      elif game_id.player_index == 1:
-        player_symbol = 'X'
-
     template_values = {
       'game_info': self.getGameInfo(game_id),
       'game_status': self.getGameStatus(game_id, game_grid),
-      'grid_text': game_grid.getGridAsHTML(),
-      'grid_array': game_grid.grid,
+      'grid_text': game_grid.getGridAsSimpleHTML(),
+      'grid_html': game_grid.getGridAsHTML(game_id.player_index),
       'message': message,
-      'player_symbol': player_symbol,
     }
     template = jinja_environment.get_template('index.html')
     return template.render(template_values)

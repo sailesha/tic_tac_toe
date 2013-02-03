@@ -16,14 +16,12 @@ class GameGridDB(db.Model):
     return None
 
 class GameGrid:
-  game_id = ''
-  grid = [[0, 0, 0],
-          [0, 0, 0],
-          [0, 0, 0]]
-  current_player_index = 0
-
   def __init__(self, game_id):
     self.game_id = game_id
+    self.grid = [[0, 0, 0],
+                 [0, 0, 0],
+                 [0, 0, 0]]
+    self.current_player_index = 0
 
   def getGridAsString(self):
     grid_string = ''
@@ -32,7 +30,63 @@ class GameGrid:
         grid_string = grid_string + str(self.grid[row][col])
     return grid_string
 
-  def getGridAsHTML(self):
+  def getCellHTMLValue(self, row, col, player_index):
+    cell = self.grid[row][col]
+    if cell == 1:
+      return 'O'
+    if cell == 2:
+      return 'X'
+    if self.current_player_index != player_index or self.isGameOver()[0]:
+      return ''
+    if self.current_player_index == 0:
+      return 'O'
+    return 'X'
+
+  def getCellHTMLClassList(self, row, col):
+    cell = self.grid[row][col]
+    class_list = []
+    if cell == 0:
+      class_list.append('cell_empty')
+    else:
+      class_list.append('cell_full')
+
+    (cells, orientation) = self.getWinningCells()
+    if cells and (row, col) in cells:
+      if orientation == 0:
+        class_list.append('strike_horizontal')
+      elif orientation == 1:
+        class_list.append('strike_vertical')
+      elif orientation == 2:
+        class_list.append('strike_diagonal')
+
+    return class_list
+
+  def getCellHTMLOnClick(self, row, col):
+    cell = self.grid[row][col]
+    if cell != 0 or self.isGameOver()[0]:
+      return ''
+    return 'onClickCell(%d, %d)' % (row, col)
+
+  def getCellAsHTML(self, row, col, player_index):
+    html = '<td'
+    html = html + ' class="%s"' % ' '.join(self.getCellHTMLClassList(row, col))
+    html = html + ' onclick="%s"' % self.getCellHTMLOnClick(row, col)
+    html = html + '>'
+    html = html + self.getCellHTMLValue(row, col, player_index)
+    html = html + '</td>'
+    return html
+
+  def getGridAsHTML(self, player_index):
+    html = '<table>'
+    for row in range(0, 3):
+      html = html + '<tr>'
+      for col in range(0, 3):
+        html = html + self.getCellAsHTML(row, col, player_index)
+      html = html + '</tr>'
+    html = html + '</table>'
+    return html
+
+  def getGridAsSimpleHTML(self):
     page = ''
     for row in range(0, 3):
       for col in range(0, 3):
@@ -56,7 +110,10 @@ class GameGrid:
         self.grid[row][col] = int(letter)
 
   def isGameOver(self):
-    value = self.getWinningValue()
+    (cells, orientation) = self.getWinningCells()
+    if not cells:
+      return (False, 0)
+    value = self.grid[cells[0][0]][cells[0][1]]
     if value == 1:
       return (True, 0)
     elif value == 2:
@@ -64,21 +121,25 @@ class GameGrid:
     else:
       return (False, 0)
 
-  def getWinningValue(self):
+  def cellValuesMatch(self, cells):
+    val1 = self.grid[cells[0][0]][cells[0][1]]
+    val2 = self.grid[cells[1][0]][cells[1][1]]
+    val3 = self.grid[cells[2][0]][cells[2][1]]
+    return val1 != 0 and val1 == val2 and val2 == val3
+
+  def getWinningCells(self):
     for row in range(0, 3):
-      if self.grid[row][0] != 0 and \
-         self.grid[row][0] == self.grid[row][1] and \
-         self.grid[row][1] == self.grid[row][2]:
-        return self.grid[row][0]
+      cells = [(row, 0), (row, 1), (row, 2)]
+      if self.cellValuesMatch(cells):
+        return (cells, 0)
     for col in range(0, 3):
-      if self.grid[0][col] != 0 and \
-         self.grid[0][col] == self.grid[1][col] and \
-         self.grid[1][col] == self.grid[2][col]:
-        return self.grid[0][col]
-    if self.grid[0][0] != 0 and \
-       self.grid[0][0] == self.grid[1][1] and \
-       self.grid[1][1] == self.grid[2][2]:
-      return self.grid[0][0]
+      cells = [(0, col), (1, col), (2, col)]
+      if self.cellValuesMatch(cells):
+        return (cells, 1)
+    cells = [(0, 0), (1, 1), (2, 2)]
+    if self.cellValuesMatch(cells):
+      return (cells, 2)
+    return (None, 0)
 
   def endCurrentTurn(self):
     self.current_player_index = (self.current_player_index + 1) % 2

@@ -38,6 +38,8 @@
         -moz-user-select: none;    
         -ms-user-select: none;
         cursor: default;
+        background-position:center;
+        background-repeat:no-repeat;
       }
       .cell_empty {
         color: #FFF;
@@ -50,6 +52,15 @@
       }
       .cell_full {
         color: #333;
+      }
+      .strike_horizontal {
+        background: transparent url('/images/strike_horizontal.png');
+      }
+      .strike_vertical {
+        background: transparent url('/images/strike_vertical.png');
+      }
+      .strike_diagonal {
+        background: transparent url('/images/strike_diagonal.png');
       }
     </style>
     <script>
@@ -76,27 +87,7 @@
     {% endif %}
 
     <div class='grid'>
-      <table>
-        {% for row in [0, 1, 2] %}
-          <tr>
-            {% for col in [0, 1, 2] %}
-              {% if grid_array[row][col] == 1 %}
-                <td class="cell_full">O</td>
-              {% elif grid_array[row][col] == 2 %}
-                <td class="cell_full">X</td>
-              {% else %}
-                <td class="cell_empty"
-                    {% if player_symbol != '' %}
-                      onclick='onClickCell({{row}}, {{col}})'
-                    {% endif %}
-                  >
-                  {{ player_symbol }}
-                </td>
-              {% endif %}
-            {% endfor %}
-          </tr>
-        {% endfor %}
-      </table>
+      {{ grid_html }}
     </div>
   </body>
 </html>

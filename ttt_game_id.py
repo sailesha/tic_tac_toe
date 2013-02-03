@@ -23,9 +23,6 @@ def IntToIDString(num_value):
 
 
 class GameID:
-  id = ''
-  player_index = 0
-
   def __init__(self, id, player_index):
     self.id = id
     self.player_index = player_index

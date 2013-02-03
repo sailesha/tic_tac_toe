@@ -28,7 +28,7 @@ class MainPage(webapp2.RequestHandler):
   def getCurrentGameID(self, *args):
     if len(args) > 0 and type(args[0]) is tuple:
       if len(args[0]) > 0 and type(args[0][0]) is str:
-        return GameID.MakeFromIDAndPositionString(args[0][0])
+        return GameID.MakeFromIDAndPlayerIndexString(args[0][0])
     game_id = self.session.get('game_id')
     if game_id:
       return GameID(game_id, 0)
@@ -40,25 +40,43 @@ class MainPage(webapp2.RequestHandler):
     game_grid = GameGrid.FindGameGridForID(game_id.id)
     if game_grid:
       return game_grid 
-    if game_id.position != 0:
+    if game_id.player_idex != 0:
       return None
     game_grid = GameGrid(game_id.id)
     game_grid.save()
     return game_grid
 
-  def makePage(self, game_id):
+  def makePage(self, game_id, message=None):
     game_grid = self.getGameGrid(game_id)
 
     page = '<HTML><BODY>'
-    page = 'game_id: ' + game_id.id + '/' + str(game_id.position) + '<BR>'
+    page = 'game_id: ' + game_id.id + '/' + str(game_id.player_index) + '<BR>'
+    if game_id.player_index == 0:
+      page = page + 'You are: O'
+    else:
+      page = page + 'You are: X'
+    game_over = game_grid.isGameOver()
+    if game_over[0]:
+      if game_over[1] == game_id.player_index:
+        page = page + ', you won!'
+      else:
+        page = page + ', you lost'
+    elif game_id.player_index == game_grid.current_player_index:
+      page = page + ', your turn'
+    else:
+      page = page + ', not your turn'
+    page = page + '<BR>'
+
     if game_grid:
       page = page + game_grid.getGridAsHTML()
       page = page + """<FORM method="post">
-                         <textarea name="content"></textarea>
+                         <textarea name="text_command"></textarea>
                          <input type="submit" value="Submit">
                        </FORM>"""
     else:
       page = page + 'Error: No game found<BR>'
+    if message:
+      page = page + message + '<BR>'
     page = page + '</BODY></HTML>'
     return page
 
@@ -68,15 +86,26 @@ class MainPage(webapp2.RequestHandler):
 
   def post(self, *args, **kwargs):
     game_id = self.getCurrentGameID(args)
-    content = self.request.get('content').split(',')
-    row = int(content[0])
-    col = int(content[1])
-    value = int(content[2])
     game_grid = self.getGameGrid(game_id)
-    if game_grid:
-      game_grid.setGridValue(row, col, value)
-      game_grid.save()
-    self.response.write(self.makePage(game_id))
+    words = self.request.get('text_command').upper().split()
+    message = ''
+    if game_grid and len(words) > 0:
+      if words[0] == 'SET' and len(words) == 3:
+        row = int(words[1])
+        col = int(words[2])
+        if game_grid.setGridValue(row, col, game_id.player_index):
+          game_grid.endCurrentTurn()
+          game_grid.save()
+        else:
+          message = 'Error: invalid move'
+      elif words[0] == 'INVITE' and len(words) == 2:
+        if game_id.player_index == 0:
+          if words[1] == 'FRIEND':
+            url = self.request.host_url + '/' + game_id.id + '1'
+            message = 'Ask friend to go to ' + url
+        else:
+          message = 'Only the host player can invite.'
+    self.response.write(self.makePage(game_id, message))
 
 config = {}
 config['webapp2_extras.sessions'] = {

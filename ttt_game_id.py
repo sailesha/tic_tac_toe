@@ -24,11 +24,11 @@ def IntToIDString(num_value):
 
 class GameID:
   id = ''
-  position = 0
+  player_index = 0
 
-  def __init__(self, id, position):
+  def __init__(self, id, player_index):
     self.id = id
-    self.position = position
+    self.player_index = player_index
 
   @staticmethod
   def MakeUniqueGameID():
@@ -44,12 +44,12 @@ class GameID:
     return GameID(IntToIDString(0), 0)
 
   @staticmethod
-  def MakeFromIDAndPositionString(id_pos_string):
+  def MakeFromIDAndPlayerIndexString(id_pos_string):
     length = len(id_pos_string)
     if length < 2:
       return None
-    id = id_pos_string[0:length - 1]
-    pos = value[length - 1:]
-    if pos.isdigit() and int(pos) != 0:
-      return GameID(id, pos)
+    id = id_pos_string[0:length - 1].upper()
+    pos = id_pos_string[length - 1:]
+    if pos.isdigit() and int(pos) == 1:
+      return GameID(id, int(pos))
     return None
